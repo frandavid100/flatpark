@@ -37,5 +37,32 @@ url="$(jq -r '.assets[] | select(.name | test("^Leaf-.+-flatpark-x86_64\\.tar\\.
 [ -n "$version" ] && [ -n "$url" ] || { echo "failed to resolve leaf release" >&2; exit 1; }
 echo "resolved leaf $version ($date): $url" >&2
 
+# Notes are optional: a missing tag file, a changed upstream XML layout or an
+# invalid fragment must never prevent the existing binary update from landing.
+# Read only the matching release description from Leaf's generated metainfo;
+# update-pins validates this fragment through its existing releaseNotes path.
+tag="$(jq -r '.tag_name' <<<"$rel")"
+release_url="$(jq -r '.html_url' <<<"$rel")"
+notes=""
+if metainfo="$(curl -fsSL --connect-timeout 5 --max-time 20 --max-filesize 1048576 \
+    "https://raw.githubusercontent.com/$repo/$tag/data/io.github.frandavid100.leaf.metainfo.xml")"; then
+  if ! notes="$(jq -erRs --arg v "$version" '
+    [capture("<release\\s+[^>]*\\bversion=\"(?<version>[^\"]+)\"[^>]*>(?<body>[\\s\\S]*?)</release>"; "g")
+     | select(.version == $v)
+     | .body
+     | capture("<description>(?<notes>[\\s\\S]*?)</description>")
+     | .notes
+     | select(test("\\S"))]
+    | if length == 1 then .[0] else empty end
+  ' <<<"$metainfo")"; then
+    notes=""
+    echo "warning: no unambiguous release notes for leaf $version; updating without notes" >&2
+  fi
+else
+  echo "warning: could not fetch leaf $version metainfo; updating without notes" >&2
+fi
+
 jq -n --arg v "$version" --arg d "$date" --arg u "$url" \
-  '{version:$v, releaseDate:$d, sources:[{filename:"leaf-app.tar.xz", url:$u}]}'
+  --arg r "$release_url" --arg n "$notes" \
+  '{version:$v, releaseDate:$d, sources:[{filename:"leaf-app.tar.xz", url:$u}], releaseUrl:$r}
+   + (if $n == "" then {} else {releaseNotes:$n} end)'
