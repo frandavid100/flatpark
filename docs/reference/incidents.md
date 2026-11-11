@@ -45,6 +45,7 @@ One feature or one piece of desktop integration.
 
 | App | Symptom | Cause | Fix | Check |
 |---|---|---|---|---|
+| Leaf | Missing-font downloads unavailable in alpha.45 | New on-demand downloads need network access | Grant network for requested font downloads; [upstream #279](https://github.com/frandavid100/leaf/issues/279) | [Main feature](../reviewers/testing-playbook.md#the-main-feature) |
 | Folia | No media controls, windows not grouped | MPRIS name not granted; wrong `StartupWMClass` | #609 (user report #607) | [Bus names](../reviewers/testing-playbook.md#bus-names-tray-media-second-launch), [window class](../reviewers/testing-playbook.md#window-class) |
 | Flow | Media controls dead | `launch` symlink gave WebKit a hashed name | #549 | [Bus names](../reviewers/testing-playbook.md#bus-names-tray-media-second-launch) |
 | Harbor | Media keys dead | MPRIS name not granted | #517 | [Bus names](../reviewers/testing-playbook.md#bus-names-tray-media-second-launch) |
